@@ -1,2 +1,6 @@
 .phalcon
 .idea
+libweibo
+wb_*
+app/cache
+.gitignore

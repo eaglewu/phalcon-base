@@ -7,11 +7,17 @@ use Phalcon\Db\Adapter\Pdo\Mysql as MysqlDbAdapter;
 use Phalcon\Mvc\View\Engine\Volt as VoltEngine;
 use Phalcon\Mvc\Model\Metadata\Memory as MetaDataAdapter;
 use Phalcon\Session\Adapter\Files as SessionAdapter;
+use Phalcon\Cache\Backend\Libmemcached;
+use Phalcon\Mvc\Router;
 
 /**
  * The FactoryDefault Dependency Injector automatically register the right services providing a full stack framework
  */
 $di = new FactoryDefault();
+
+$di->set('config', function () use ($config) {
+    return $config;
+});
 
 /**
  * The URL component is used to generate all kind of urls in the application
@@ -23,6 +29,18 @@ $di->set('url', function () use ($config) {
     return $url;
 }, true);
 
+$di->set('router', function () {
+
+    $router = new Router();
+//    $router->notFound(array(
+//        'controller' => 'Helper',
+//        'action' => 'error404'
+//    ));
+
+    return $router;
+
+}, true);
+
 /**
  * 注册视图组件
  */
@@ -32,12 +50,12 @@ $di->set('view', function () use ($config) {
     $view->setViewsDir($config->application->viewsDir);
 
     $view->registerEngines(array(
-        '.volt'  => function ($view, $di) use ($config) {
+        '.volt' => function ($view, $di) use ($config) {
 
             $volt = new VoltEngine($view, $di);
 
             $volt->setOptions(array(
-                'compiledPath'      => $config->application->cacheDir,
+                'compiledPath' => $config->application->cacheDir,
                 'compiledSeparator' => '_'
             ));
 
@@ -58,11 +76,11 @@ $di->set('view', function () use ($config) {
 $di->set('dbMaster', function () use ($config) {
 
     return new MysqlDbAdapter(array(
-        'host'     => $config->database->master->host,
+        'host' => $config->database->master->host,
         'username' => $config->database->master->username,
         'password' => $config->database->master->password,
-        'dbname'   => $config->database->master->dbname,
-        "charset"  => $config->database->master->charset
+        'dbname' => $config->database->master->dbname,
+        "charset" => $config->database->master->charset
     ));
 
 });
@@ -73,14 +91,26 @@ $di->set('dbMaster', function () use ($config) {
 $di->set('dbSlave1', function () use ($config) {
 
     return new MysqlDbAdapter(array(
-        'host'     => $config->database->slave1->host,
+        'host' => $config->database->slave1->host,
         'username' => $config->database->slave1->username,
         'password' => $config->database->slave1->password,
-        'dbname'   => $config->database->slave1->dbname,
-        "charset"  => $config->database->slave1->charset
+        'dbname' => $config->database->slave1->dbname,
+        "charset" => $config->database->slave1->charset
     ));
 
 });
+
+/**
+ * Memcacached + Igbinary
+ */
+$frontCache = new Phalcon\Cache\Frontend\Igbinary(array(
+    "lifetime" => 172800
+));
+
+$di->set('cache', function () use ($config, $frontCache) {
+    return new Libmemcached($frontCache, $config->memcached->toArray());
+});
+
 
 /**
  * If the configuration specify the use of metadata adapter use it or use memory otherwise

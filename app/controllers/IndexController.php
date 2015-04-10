@@ -13,10 +13,9 @@ class IndexController extends ControllerBase
 
     public function indexAction()
     {
+        var_dump($this->config->socialLogin->sina->toArray());
 
-        foreach (User::find() as $user) {
-            echo $user->Host . PHP_EOL;
-        }
+        var_dump(App\Library\SocialLogin\SocialLogin::init('QQ'));
 
         $this->view->disable();
     }
